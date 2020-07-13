@@ -20,6 +20,7 @@ class ZefyrEditor extends StatefulWidget {
     Key key,
     @required this.controller,
     @required this.focusNode,
+    this.expandable = false,
     this.autofocus = true,
     this.mode = ZefyrMode.edit,
     this.padding = const EdgeInsets.symmetric(horizontal: 16.0),
@@ -69,6 +70,8 @@ class ZefyrEditor extends StatefulWidget {
 
   /// Padding around editable area.
   final EdgeInsets padding;
+
+  final bool expandable;
 
   /// The appearance of the keyboard.
   ///
@@ -169,7 +172,7 @@ class _ZefyrEditorState extends State<ZefyrEditor> {
 
     final scaffold = ZefyrScaffold.of(context);
     if (_scaffold != scaffold) {
-      final didHaveToolbar = hasToolbar;
+      bool didHaveToolbar = hasToolbar;
       hideToolbar();
       _scaffold = scaffold;
       if (didHaveToolbar) showToolbar();
@@ -186,8 +189,8 @@ class _ZefyrEditorState extends State<ZefyrEditor> {
 
   @override
   Widget build(BuildContext context) {
-    final themeData = Theme.of(context);
-    final keyboardAppearance =
+    final ThemeData themeData = Theme.of(context);
+    final Brightness keyboardAppearance =
         widget.keyboardAppearance ?? themeData.primaryColorBrightness;
 
     Widget editable = ZefyrEditableText(
@@ -196,6 +199,7 @@ class _ZefyrEditorState extends State<ZefyrEditor> {
       imageDelegate: _scope.imageDelegate,
       selectionControls: widget.selectionControls,
       autofocus: widget.autofocus,
+      expandable: widget.expandable,
       mode: widget.mode,
       padding: widget.padding,
       physics: widget.physics,
