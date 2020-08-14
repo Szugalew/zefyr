@@ -289,6 +289,11 @@ class ZefyrSelectionOverlayState extends State<ZefyrSelectionOverlay>
   }
 
   void _handleLongPress() {
+    if (isToolbarVisible) {
+        hideToolbar();
+      } else {
+        showToolbar();
+      }
     final globalPoint = _longPressPosition;
     _longPressPosition = null;
     final result = HitTestResult();
