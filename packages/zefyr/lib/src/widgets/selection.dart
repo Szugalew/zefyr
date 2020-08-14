@@ -75,7 +75,9 @@ class ZefyrSelectionOverlayState extends State<ZefyrSelectionOverlay>
   }
 
   void showToolbar() {
+    print("building toolbar");
     final toolbarOpacity = _toolbarController.view;
+    print("building overlay");
     _toolbar = OverlayEntry(
       builder: (context) => FadeTransition(
         opacity: toolbarOpacity,
@@ -85,7 +87,9 @@ class ZefyrSelectionOverlayState extends State<ZefyrSelectionOverlay>
         ),
       ),
     );
+    print("building insert");
     _overlay.insert(_toolbar);
+    print("building forward");
     _toolbarController.forward(from: 0.0);
   }
 
@@ -276,7 +280,6 @@ class ZefyrSelectionOverlayState extends State<ZefyrSelectionOverlay>
       affinity: position.affinity,
     );
     if (_didCaretTap && _selection == selection) {
-      _didCaretTap = false;
       if (isToolbarVisible) {
         hideToolbar();
       } else {
@@ -285,20 +288,19 @@ class ZefyrSelectionOverlayState extends State<ZefyrSelectionOverlay>
     } else {
       if (isToolbarVisible) {
         hideToolbar();
-        _didCaretTap = false;
       } else {
-        _didCaretTap = true;
+         _didCaretTap = true;
       }
     }
     _scope.controller.updateSelection(selection, source: ChangeSource.local);
   }
 
   void _handleLongPress() {
-    if (isToolbarVisible) {
-        hideToolbar();
-      } else {
-        showToolbar();
-      }
+    print("long presssssssss");
+    if (_toolbar == null) {
+      print("showToolbar");
+      showToolbar();
+    }
     final globalPoint = _longPressPosition;
     _longPressPosition = null;
     final result = HitTestResult();
@@ -315,6 +317,11 @@ class ZefyrSelectionOverlayState extends State<ZefyrSelectionOverlay>
       extentOffset: word.end,
     );
     _scope.controller.updateSelection(selection, source: ChangeSource.local);
+    print("show second time?");
+    if (_toolbar == null) {
+      print("second");
+        showToolbar();
+      }
   }
 
   @override
