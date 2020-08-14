@@ -283,7 +283,12 @@ class ZefyrSelectionOverlayState extends State<ZefyrSelectionOverlay>
         showToolbar();
       }
     } else {
-      _didCaretTap = true;
+      if (isToolbarVisible) {
+        hideToolbar();
+        _didCaretTap = false;
+      } else {
+        _didCaretTap = true;
+      }
     }
     _scope.controller.updateSelection(selection, source: ChangeSource.local);
   }
