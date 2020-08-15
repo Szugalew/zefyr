@@ -61,6 +61,8 @@ class ZefyrSelectionOverlayState extends State<ZefyrSelectionOverlay>
   TextSelection _selection;
   FocusOwner _focusOwner;
 
+  var _document;
+
   bool _didCaretTap = false;
 
   /// Whether selection controls should be hidden.
@@ -72,6 +74,15 @@ class ZefyrSelectionOverlayState extends State<ZefyrSelectionOverlay>
       return isSelectionCollapsed || _scope.focusOwner != FocusOwner.editor;
     }
     return isSelectionCollapsed;
+  }
+
+  bool showMoveHandle = false;
+  bool get shouldHideMove {
+    if (!_scope.mode.canSelect) {return true;}
+    if( _scope.focusOwner == FocusOwner.editor ){
+      return !showMoveHandle;
+    }
+    return true;
   }
 
   void showToolbar() {
@@ -103,6 +114,7 @@ class ZefyrSelectionOverlayState extends State<ZefyrSelectionOverlay>
 
   @override
   set textEditingValue(TextEditingValue value) {
+    print("text edited");
     final cursorPosition = value.selection.extentOffset;
     final oldText = _scope.controller.document.toPlainText();
     final newText = value.text;
@@ -119,6 +131,7 @@ class ZefyrSelectionOverlayState extends State<ZefyrSelectionOverlay>
 
   @override
   void hideToolbar() {
+    showMoveHandle=false;
     _didCaretTap = false; // reset double tap.
     _toolbar?.remove();
     _toolbar = null;
@@ -146,6 +159,7 @@ class ZefyrSelectionOverlayState extends State<ZefyrSelectionOverlay>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    showMoveHandle = false;
     final scope = ZefyrScope.of(context);
     if (_scope != scope) {
       _scope?.removeListener(_handleChange);
@@ -200,6 +214,10 @@ class ZefyrSelectionOverlayState extends State<ZefyrSelectionOverlay>
             position: _SelectionHandlePosition.extent,
             selectionOverlay: this,
           ),
+          SelectionHandleDriver2(
+            position: _SelectionHandlePosition.base,
+            selectionOverlay: this,
+          ),
         ],
       ),
     );
@@ -217,6 +235,15 @@ class ZefyrSelectionOverlayState extends State<ZefyrSelectionOverlay>
   }
 
   void _handleChange() {
+    if (_document == null){
+      _document = _scope.controller.document;
+    }
+    print (_document.toPlainText().length);
+    print (_scope.controller.document.toPlainText().length);
+    if (_document.toPlainText().length != _scope.controller.document.toPlainText().length){
+      showMoveHandle = false;
+      _document = _scope.controller.document;
+    }
     if (_selection != _scope.selection || _focusOwner != _scope.focusOwner) {
       _updateToolbar();
     }
@@ -263,6 +290,7 @@ class ZefyrSelectionOverlayState extends State<ZefyrSelectionOverlay>
   }
 
   void _handleTap() {
+    showMoveHandle=true;
     assert(_lastTapDownPosition != null);
     final globalPoint = _lastTapDownPosition;
     _lastTapDownPosition = null;
@@ -296,6 +324,7 @@ class ZefyrSelectionOverlayState extends State<ZefyrSelectionOverlay>
   }
 
   void _handleLongPress() {
+    showMoveHandle=false;
     print("long presssssssss");
     if (_toolbar == null) {
       print("showToolbar");
@@ -580,6 +609,299 @@ class _SelectionHandleDriverState extends State<SelectionHandleDriver>
       _scope.updateSelection(newSelection, source: ChangeSource.local);
     }
   }
+
+  Offset _getLocalPointFromDragDetails(DragUpdateDetails details) {
+    // Keep track of the handle size adjusted position (Android only)
+    _dragPosition += details.delta;
+    RenderEditableBox paragraph =
+        _scope.renderContext.boxForGlobalPoint(_dragPosition);
+    // When dragging outside a paragraph, user expects dragging to
+    // capture horizontal component of movement
+    if (paragraph == null) {
+      paragraph = _dragCurrentParagraph;
+      var effectiveGlobalPoint = paragraph.localToGlobal(Offset.zero);
+      if (_dragPosition.dy > paragraph.localToGlobal(Offset.zero).dy) {
+        effectiveGlobalPoint = Offset(
+            _dragPosition.dx, effectiveGlobalPoint.dy + paragraph.size.height);
+      }
+      if (_dragPosition.dy < paragraph.localToGlobal(Offset.zero).dy) {
+        effectiveGlobalPoint =
+            Offset(_dragPosition.dx, effectiveGlobalPoint.dy);
+      }
+      return paragraph.globalToLocal(effectiveGlobalPoint);
+    }
+    _dragCurrentParagraph = paragraph;
+    return paragraph.globalToLocal(_dragPosition);
+  }
+}
+
+class SelectionHandleDriver2 extends StatefulWidget {
+  const SelectionHandleDriver2({
+    Key key,
+    @required this.position,
+    @required this.selectionOverlay,
+  })  : assert(selectionOverlay != null),
+        super(key: key);
+
+  final _SelectionHandlePosition position;
+  final ZefyrSelectionOverlayState selectionOverlay;
+
+  @override
+  _SelectionHandleDriver2State createState() => _SelectionHandleDriver2State();
+}
+
+class _SelectionHandleDriver2State extends State<SelectionHandleDriver2>
+    with SingleTickerProviderStateMixin {
+  ZefyrScope _scope;
+
+  /// Current document selection.
+  TextSelection get selection => _selection;
+  TextSelection _selection;
+
+  /// Returns `true` if this handle is located at the baseOffset of selection.
+  bool get isBaseHandle => widget.position == _SelectionHandlePosition.base;
+
+  /// Character offset of this handle in the document.
+  ///
+  /// For base handle this equals to [TextSelection.baseOffset] and for
+  /// extent handle - [TextSelection.extentOffset].
+  int get documentOffset =>
+      isBaseHandle ? selection.baseOffset : selection.extentOffset;
+
+  List<TextSelectionPoint> getEndpointsForSelection(RenderEditableBox block) {
+    if (block == null) return null;
+
+    final paintOffset = Offset.zero;
+    final boxes = block.getEndpointsForSelection(selection);
+    if (boxes.isEmpty) return null;
+    final start = Offset(boxes.first.start, boxes.first.bottom) + paintOffset;
+    final end = Offset(boxes.last.end, boxes.last.bottom) + paintOffset;
+    return <TextSelectionPoint>[
+      TextSelectionPoint(start, boxes.first.direction),
+      TextSelectionPoint(end, boxes.last.direction),
+    ];
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final scope = ZefyrScope.of(context);
+    if (_scope != scope) {
+      _scope?.removeListener(_handleScopeChange);
+      _scope = scope;
+      _scope.addListener(_handleScopeChange);
+    }
+    _selection = _scope.selection;
+  }
+
+  @override
+  void dispose() {
+    _scope?.removeListener(_handleScopeChange);
+    super.dispose();
+  }
+
+  //
+  // Overridden members
+  //
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.selectionOverlay.shouldHideMove) {
+      return Container();
+    }
+    final block = _scope.renderContext.boxForTextOffset(documentOffset);
+    if (block == null) {
+      // TODO: For some reason sometimes we get updates when render boxes
+      //      are in process of rebuilding so we don't have access to them here.
+      //      As a workaround we just return empty container. There is usually
+      //      another rebuild right after this one which "fixes" the view.
+      //      Example: when toolbar button is toggled changing style of current
+      //      selection.
+      return Container();
+    }
+
+    final endpoints = getEndpointsForSelection(block);
+    if (endpoints == null || endpoints.isEmpty) return Container();
+
+    Offset point;
+    TextSelectionHandleType type;
+
+    // we invert base / extend if the selection is from bottom to top
+    var pos = widget.position;
+    if (selection.baseOffset > selection.extentOffset) {
+      pos = pos == _SelectionHandlePosition.base
+          ? _SelectionHandlePosition.extent
+          : _SelectionHandlePosition.base;
+    }
+
+    switch (pos) {
+      case _SelectionHandlePosition.base:
+        point = endpoints[0].point;
+        type = _chooseType(endpoints[0], TextSelectionHandleType.left,
+            TextSelectionHandleType.right);
+        break;
+      case _SelectionHandlePosition.extent:
+        // [endpoints] will only contain 1 point for collapsed selections, in
+        // which case we shouldn't be building the [end] handle.
+        assert(endpoints.length == 2);
+        point = endpoints[1].point;
+        type = _chooseType(endpoints[1], TextSelectionHandleType.right,
+            TextSelectionHandleType.left);
+        break;
+    }
+    
+    final viewport = block.size;
+    point = Offset(
+      point.dx.clamp(0.0, viewport.width),
+      point.dy.clamp(0.0, viewport.height),
+    );
+
+    final handleAnchor = widget.selectionOverlay.controls.getHandleAnchor(
+      type,
+      block.preferredLineHeight,
+    );
+    final handleSize = widget.selectionOverlay.controls.getHandleSize(
+      block.preferredLineHeight,
+    );
+    final handleRect = Rect.fromLTWH(
+      // Put handleAnchor on top of point
+      point.dx - handleAnchor.dx,
+      point.dy - handleAnchor.dy,
+      handleSize.width,
+      handleSize.height,
+    );
+
+    // Make sure the GestureDetector is big enough to be easily interactive.
+    final interactiveRect = handleRect.expandToInclude(
+      Rect.fromCircle(
+          center: handleRect.center, radius: kMinInteractiveDimension / 2),
+    );
+    final padding = RelativeRect.fromLTRB(
+      math.max((interactiveRect.width - handleRect.width) / 2, 0),
+      math.max((interactiveRect.height - handleRect.height) / 2, 0),
+      math.max((interactiveRect.width - handleRect.width) / 2, 0),
+      math.max((interactiveRect.height - handleRect.height) / 2, 0),
+    );
+
+    return CompositedTransformFollower(
+      link: block.layerLink,
+      offset: interactiveRect.topLeft,
+      showWhenUnlinked: false,
+      child: Container(
+        alignment: Alignment.topLeft,
+        width: interactiveRect.width,
+        height: interactiveRect.height,
+        child: GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          dragStartBehavior: DragStartBehavior.start,
+          onPanStart: _handleDragStart,
+          onPanUpdate: _handleDragUpdate,
+          child: Padding(
+            padding: EdgeInsets.only(
+              left: padding.left,
+              top: padding.top,
+              right: padding.right,
+              bottom: padding.bottom,
+            ),
+            child: widget.selectionOverlay.controls.buildHandle(
+              context,
+              type,
+              block.preferredLineHeight,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  //
+  // Private members
+  //
+
+  TextSelectionHandleType _chooseType(
+    TextSelectionPoint endpoint,
+    TextSelectionHandleType ltrType,
+    TextSelectionHandleType rtlType,
+  ) {
+    return TextSelectionHandleType.collapsed;
+  }
+
+  Offset _dragPosition;
+  RenderEditableBox _dragCurrentParagraph;
+  
+  void _handleScopeChange() {
+    print("handle scope change2 813");
+    if (_selection != _scope.selection) {
+      setState(() {
+        _selection = _scope.selection;
+      });
+    }
+  }
+
+  void _handleDragStart(DragStartDetails details) {
+    _dragCurrentParagraph =
+        _scope.renderContext.boxForTextOffset(documentOffset);
+    _dragPosition = Platform.isAndroid
+        ? details.globalPosition -
+            Offset(
+                0,
+                widget.selectionOverlay.controls
+                    .getHandleSize(_dragCurrentParagraph.preferredLineHeight)
+                    .height)
+        : details.globalPosition;
+  }
+/*
+  void _handleDragStart(DragStartDetails details) {
+    _dragCurrentParagraph =
+        _scope.renderContext.boxForTextOffset(documentOffset);
+    _dragPosition = Platform.isAndroid
+        ? details.globalPosition -
+            Offset(
+                0,
+                widget.selectionOverlay.controls
+                    .getHandleSize(_dragCurrentParagraph.preferredLineHeight)
+                    .height)
+        : details.globalPosition;
+  }
+*/
+void _handleDragUpdate(DragUpdateDetails details) {
+    final globalPoint = details.globalPosition;
+    final result = HitTestResult();
+    WidgetsBinding.instance.hitTest(result, globalPoint);
+
+    RenderEditableProxyBox box = _getEditableBox(result);
+    box ??= _scope.renderContext.closestBoxForGlobalPoint(globalPoint);
+    if (box == null) return null;
+
+    //final localPoint = box.globalToLocal(globalPoint);
+    //final position = box.getPositionForOffset(localPoint);
+    final localPoint = _getLocalPointFromDragDetails(details);
+    final position = _dragCurrentParagraph.getPositionForOffset(localPoint);
+    final selection = TextSelection.collapsed(
+      offset: position.offset,
+      affinity: position.affinity,
+    );
+    _scope.controller.updateSelection(selection, source: ChangeSource.local);
+  }
+/*
+  void _handleDragUpdate(DragUpdateDetails details) {
+    final localPoint = _getLocalPointFromDragDetails(details);
+    final position = _dragCurrentParagraph.getPositionForOffset(localPoint);
+    final newSelection = selection.copyWith(
+      baseOffset: isBaseHandle ? position.offset : selection.baseOffset,
+      extentOffset: isBaseHandle ? selection.extentOffset : position.offset,
+    );
+
+    if (newSelection.baseOffset >= newSelection.extentOffset) {
+      // Don't allow reversed or collapsed selection.
+      return;
+    }
+
+    if (newSelection != _selection) {
+      _scope.updateSelection(newSelection, source: ChangeSource.local);
+    }
+  }
+*/
 
   Offset _getLocalPointFromDragDetails(DragUpdateDetails details) {
     // Keep track of the handle size adjusted position (Android only)
