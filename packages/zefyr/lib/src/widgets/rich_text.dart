@@ -133,10 +133,19 @@ class RenderZefyrParagraph extends RenderParagraph
   // edge-case with our TextSpan objects not having last line-break character.
   @override
   List<ui.TextBox> getEndpointsForSelection(TextSelection selection) {
-    final local = getLocalSelection(selection);
+    var local = selection;
+    print(local);
     if (local.isCollapsed) {
       final caret = CursorPainter.buildPrototype(preferredLineHeight);
       final offset = getOffsetForCaret(local.extent, caret);
+      print("THIS HSFNXFN");
+      print(ui.TextBox.fromLTRBD(
+          offset.dx,
+          offset.dy,
+          offset.dx,
+          offset.dy + caret.height,
+          TextDirection.ltr,
+        ));
       return [
         ui.TextBox.fromLTRBD(
           offset.dx,
@@ -147,6 +156,8 @@ class RenderZefyrParagraph extends RenderParagraph
         )
       ];
     }
+
+    local = getLocalSelection(selection);
 
     final result = getBoxesForSelection(_trimSelection(local)).toList();
 
