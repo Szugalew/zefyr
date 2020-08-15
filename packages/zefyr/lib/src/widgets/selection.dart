@@ -61,7 +61,7 @@ class ZefyrSelectionOverlayState extends State<ZefyrSelectionOverlay>
   TextSelection _selection;
   FocusOwner _focusOwner;
 
-  var _document;
+  var _documentLength;
 
   bool _didCaretTap = false;
 
@@ -131,6 +131,7 @@ class ZefyrSelectionOverlayState extends State<ZefyrSelectionOverlay>
 
   @override
   void hideToolbar() {
+      print("hidden 134");
     showMoveHandle=false;
     _didCaretTap = false; // reset double tap.
     _toolbar?.remove();
@@ -159,6 +160,7 @@ class ZefyrSelectionOverlayState extends State<ZefyrSelectionOverlay>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+      print("hidden 162");
     showMoveHandle = false;
     final scope = ZefyrScope.of(context);
     if (_scope != scope) {
@@ -235,22 +237,27 @@ class ZefyrSelectionOverlayState extends State<ZefyrSelectionOverlay>
   }
 
   void _handleChange() {
-    if (_document == null){
-      _document = _scope.controller.document;
+    print("handle change 238");
+    if (_documentLength == null){
+      print("setting document");
+      _documentLength = _scope.controller.document.toPlainText().length;
     }
-    print (_document.toPlainText().length);
+    print (_documentLength);
     print (_scope.controller.document.toPlainText().length);
-    if (_document.toPlainText().length != _scope.controller.document.toPlainText().length){
+    if (_documentLength != _scope.controller.document.toPlainText().length){
+      print("hidden 246");
       showMoveHandle = false;
-      _document = _scope.controller.document;
+      _documentLength = _scope.controller.document.toPlainText().length;
     }
     if (_selection != _scope.selection || _focusOwner != _scope.focusOwner) {
+      print("update toolbar");
       _updateToolbar();
     }
   }
 
   void _updateToolbar() {
     if (!mounted) {
+      print("return");
       return;
     }
 
@@ -262,6 +269,7 @@ class ZefyrSelectionOverlayState extends State<ZefyrSelectionOverlay>
       } else {
         if (_selection != selection) {
           if (selection.isCollapsed && isToolbarVisible) {
+            ("collapse and hide 272");
             hideToolbar();
           }
           _toolbar?.markNeedsBuild();
@@ -324,6 +332,7 @@ class ZefyrSelectionOverlayState extends State<ZefyrSelectionOverlay>
   }
 
   void _handleLongPress() {
+      print("hidden 330");
     showMoveHandle=false;
     print("long presssssssss");
     if (_toolbar == null) {
@@ -593,6 +602,7 @@ class _SelectionHandleDriverState extends State<SelectionHandleDriver>
   }
 
   void _handleDragUpdate(DragUpdateDetails details) {
+    print("start");
     final localPoint = _getLocalPointFromDragDetails(details);
     final position = _dragCurrentParagraph.getPositionForOffset(localPoint);
     final newSelection = selection.copyWith(
@@ -606,18 +616,23 @@ class _SelectionHandleDriverState extends State<SelectionHandleDriver>
     }
 
     if (newSelection != _selection) {
+      print("update");
       _scope.updateSelection(newSelection, source: ChangeSource.local);
     }
+      print("finished");
   }
 
   Offset _getLocalPointFromDragDetails(DragUpdateDetails details) {
     // Keep track of the handle size adjusted position (Android only)
     _dragPosition += details.delta;
+    print("1drag pos");
+    print(_dragPosition);
     RenderEditableBox paragraph =
         _scope.renderContext.boxForGlobalPoint(_dragPosition);
     // When dragging outside a paragraph, user expects dragging to
     // capture horizontal component of movement
     if (paragraph == null) {
+      print("1null paragraph");
       paragraph = _dragCurrentParagraph;
       var effectiveGlobalPoint = paragraph.localToGlobal(Offset.zero);
       if (_dragPosition.dy > paragraph.localToGlobal(Offset.zero).dy) {
@@ -628,8 +643,12 @@ class _SelectionHandleDriverState extends State<SelectionHandleDriver>
         effectiveGlobalPoint =
             Offset(_dragPosition.dx, effectiveGlobalPoint.dy);
       }
+      print("1returning");
+      print(paragraph.globalToLocal(effectiveGlobalPoint));
       return paragraph.globalToLocal(effectiveGlobalPoint);
     }
+    print("1returning");
+    print(paragraph.globalToLocal(_dragPosition));
     _dragCurrentParagraph = paragraph;
     return paragraph.globalToLocal(_dragPosition);
   }
@@ -669,10 +688,18 @@ class _SelectionHandleDriver2State extends State<SelectionHandleDriver2>
       isBaseHandle ? selection.baseOffset : selection.extentOffset;
 
   List<TextSelectionPoint> getEndpointsForSelection(RenderEditableBox block) {
+    print("OFFSET");
+    print(selection.baseOffset);
+    print(block);
     if (block == null) return null;
 
     final paintOffset = Offset.zero;
+    print(selection);
     final boxes = block.getEndpointsForSelection(selection);
+    print(boxes);
+    print(boxes.first.start);
+    print(boxes.last.end);
+    print(boxes.first.bottom);
     if (boxes.isEmpty) return null;
     final start = Offset(boxes.first.start, boxes.first.bottom) + paintOffset;
     final end = Offset(boxes.last.end, boxes.last.bottom) + paintOffset;
@@ -763,24 +790,29 @@ class _SelectionHandleDriver2State extends State<SelectionHandleDriver2>
     final handleSize = widget.selectionOverlay.controls.getHandleSize(
       block.preferredLineHeight,
     );
-    final handleRect = Rect.fromLTWH(
+    print("handle size");
+    print(handleSize);
+    final handleRect2 = Rect.fromLTWH(
       // Put handleAnchor on top of point
       point.dx - handleAnchor.dx,
       point.dy - handleAnchor.dy,
-      handleSize.width,
-      handleSize.height,
+      0,0,
     );
-
+    print(point.dx - handleAnchor.dx);
+       print(point.dy - handleAnchor.dy);
+       print(handleSize.width);
+      print(handleSize.height);
+    print(handleRect2);
     // Make sure the GestureDetector is big enough to be easily interactive.
-    final interactiveRect = handleRect.expandToInclude(
+    final interactiveRect = handleRect2.expandToInclude(
       Rect.fromCircle(
-          center: handleRect.center, radius: kMinInteractiveDimension / 2),
+          center: handleRect2.center, radius: kMinInteractiveDimension / 2),
     );
     final padding = RelativeRect.fromLTRB(
-      math.max((interactiveRect.width - handleRect.width) / 2, 0),
-      math.max((interactiveRect.height - handleRect.height) / 2, 0),
-      math.max((interactiveRect.width - handleRect.width) / 2, 0),
-      math.max((interactiveRect.height - handleRect.height) / 2, 0),
+      math.max((interactiveRect.width - handleRect2.width) / 2, 0),
+      math.max((interactiveRect.height - handleRect2.height) / 2, 0),
+      math.max((interactiveRect.width - handleRect2.width) / 2, 0),
+      math.max((interactiveRect.height - handleRect2.height) / 2, 0),
     );
 
     return CompositedTransformFollower(
@@ -830,7 +862,7 @@ class _SelectionHandleDriver2State extends State<SelectionHandleDriver2>
   RenderEditableBox _dragCurrentParagraph;
   
   void _handleScopeChange() {
-    print("handle scope change2 813");
+    print("handle scope change2 865");
     if (_selection != _scope.selection) {
       setState(() {
         _selection = _scope.selection;
