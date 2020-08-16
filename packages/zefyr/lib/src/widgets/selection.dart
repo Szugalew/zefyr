@@ -37,7 +37,7 @@ class ZefyrSelectionOverlay extends StatefulWidget {
 }
 
 class ZefyrSelectionOverlayState extends State<ZefyrSelectionOverlay>
-    implements TextSelectionDelegate {
+    implements TextSelectionDelegate  {
   TextSelectionControls _controls;
 
   TextSelectionControls get controls => _controls;
@@ -100,6 +100,7 @@ class ZefyrSelectionOverlayState extends State<ZefyrSelectionOverlay>
     );
     print("building insert");
     _overlay.insert(_toolbar);
+    print(_overlay);
     print("building forward");
     _toolbarController.forward(from: 0.0);
   }
@@ -125,9 +126,8 @@ class ZefyrSelectionOverlayState extends State<ZefyrSelectionOverlay>
   }
 
   @override
-  void bringIntoView(ui.TextPosition position) {
-    // TODO: implement bringIntoView
-  }
+  void bringIntoView(ui.TextPosition position) { 
+  } 
 
   @override
   void hideToolbar() {
@@ -508,6 +508,13 @@ class _SelectionHandleDriverState extends State<SelectionHandleDriver>
       point.dy.clamp(0.0, viewport.height),
     );
 
+    if (point.dx < 20 && pos == _SelectionHandlePosition.base){
+      type = TextSelectionHandleType.right;
+    }
+    if (point.dx > (viewport.width - 20) && pos == _SelectionHandlePosition.extent){
+      type = TextSelectionHandleType.left;
+    }
+
     final handleAnchor = widget.selectionOverlay.controls.getHandleAnchor(
       type,
       block.preferredLineHeight,
@@ -620,7 +627,7 @@ class _SelectionHandleDriverState extends State<SelectionHandleDriver>
       extentOffset: isBaseHandle ? selection.extentOffset : position.offset,
     );
 
-    if (newSelection.baseOffset >= newSelection.extentOffset) {
+    if (newSelection.baseOffset == newSelection.extentOffset) {
       // Don't allow reversed or collapsed selection.
       return;
     }
@@ -999,7 +1006,10 @@ class _SelectionToolbarState extends State<_SelectionToolbar> {
   }
 
   Widget _buildToolbar(BuildContext context) {
-    final base = selection.baseOffset;
+    var base = selection.baseOffset;
+    if (selection.baseOffset > selection.extentOffset) {
+        base = selection.extentOffset;
+      }
     final block = scope.renderContext.boxForTextOffset(base);
     if (block == null) {
       return Container();
