@@ -1,6 +1,7 @@
 // Copyright (c) 2018, the Zefyr project authors.  Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
+import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:flutter/rendering.dart';
@@ -71,7 +72,11 @@ class RenderZefyrParagraph extends RenderParagraph
   LineNode node;
 
   @override
-  double get preferredLineHeight => _prototypePainter.height;
+  double get preferredLineHeight {
+    //added line below, make sure layout is defined before calling height
+    _prototypePainter.layout(minWidth: constraints.minWidth, maxWidth: constraints.maxWidth);
+    return _prototypePainter.height;
+  } 
 
   @override
   SelectionOrder get selectionOrder => SelectionOrder.background;
@@ -120,12 +125,34 @@ class RenderZefyrParagraph extends RenderParagraph
   // the trailing \n is not handled by the span, drop it from the sel.
   // otherwise getBoxesForSelection fails on the web. (out of range)
   TextSelection _trimSelection(TextSelection selection) {
-    if (selection.baseOffset > node.length - 1) {
-      selection = selection.copyWith(baseOffset: node.length - 1);
+    print("TRIM SELECTION");
+    print(node);
+    print(node.length);
+    print("old selection");
+    print(selection);
+    //android allow selection of empty rows, dont do the following
+    print("PLATFORM");
+    print(Platform.isAndroid);
+    if (Platform.isAndroid == false) {
+      if (selection.baseOffset > node.length - 1) {
+        selection = selection.copyWith(baseOffset: node.length - 1);
+      }
+      if (selection.extentOffset > node.length - 1) {
+        selection = selection.copyWith(extentOffset: node.length - 1);
+      }
+    }else{
+      if(selection.extentOffset == 0){
+        selection = selection.copyWith(extentOffset: 1);
+      }
+      if(selection.baseOffset == node.length - 1 && selection.baseOffset != 0){
+        selection = selection.copyWith(baseOffset: node.length - 2);
+      }
     }
-    if (selection.extentOffset > node.length - 1) {
-      selection = selection.copyWith(extentOffset: node.length - 1);
-    }
+    print("new selection");
+    print(selection);
+    
+    
+    print("TRIM SELECTION RETURNED");
     return selection;
   }
 
@@ -134,8 +161,10 @@ class RenderZefyrParagraph extends RenderParagraph
   @override
   List<ui.TextBox> getEndpointsForSelection(TextSelection selection) {
     var local = selection;
+    print("local = selection 137");
     print(local);
     if (local.isCollapsed) {
+      _prototypePainter.layout(minWidth: constraints.minWidth, maxWidth: constraints.maxWidth);
       final caret = CursorPainter.buildPrototype(preferredLineHeight);
       final offset = getOffsetForCaret(local.extent, caret);
       print("THIS HSFNXFN");
@@ -157,10 +186,19 @@ class RenderZefyrParagraph extends RenderParagraph
       ];
     }
 
+    print("local = get local selection 161");
     local = getLocalSelection(selection);
+    print(local);
 
+    print("local trimed 165");
+    print(_trimSelection(local));
+
+    print("result = getBoxesForSelection 167");
     final result = getBoxesForSelection(_trimSelection(local)).toList();
+    print(result);
 
+    print("returning result of get endpoints for selection 169");
+    print("");
     return result;
   }
 
