@@ -264,24 +264,34 @@ class ZefyrSelectionOverlayState extends State<ZefyrSelectionOverlay>
     final selection = _scope.selection;
     final focusOwner = _scope.focusOwner;
     setState(() {
+      print("set state");
       if (shouldHideControls && isToolbarVisible) {
+      print("hide toolbar 269");
         hideToolbar();
       } else {
         if (_selection != selection) {
+          print("check 273");
           if (selection.isCollapsed && isToolbarVisible) {
-            ("collapse and hide 272");
+            print("collapse and hide 272");
             hideToolbar();
           }
-          _toolbar?.markNeedsBuild();
-          if (!selection.isCollapsed && isToolbarHidden) showToolbar();
-        } else {
+          _toolbar?.markNeedsBuild(); print("toolbar needs build 278");
           if (!selection.isCollapsed && isToolbarHidden) {
+            print("check 280");
+            showToolbar();
+          }
+        } else {
+          print("check 284");
+          if (!selection.isCollapsed && isToolbarHidden) {
+          print("check 287");
             showToolbar();
           } else if (isToolbarVisible) {
+          print("check 289");
             _toolbar?.markNeedsBuild();
           }
         }
       }
+          print("check 294");
       _selection = selection;
       _focusOwner = focusOwner;
     });
@@ -605,7 +615,7 @@ class _SelectionHandleDriverState extends State<SelectionHandleDriver>
     print("start");
     final localPoint = _getLocalPointFromDragDetails(details);
     final position = _dragCurrentParagraph.getPositionForOffset(localPoint);
-    final newSelection = selection.copyWith(
+    var newSelection = selection.copyWith(
       baseOffset: isBaseHandle ? position.offset : selection.baseOffset,
       extentOffset: isBaseHandle ? selection.extentOffset : position.offset,
     );
@@ -625,14 +635,14 @@ class _SelectionHandleDriverState extends State<SelectionHandleDriver>
   Offset _getLocalPointFromDragDetails(DragUpdateDetails details) {
     // Keep track of the handle size adjusted position (Android only)
     _dragPosition += details.delta;
-    print("1drag pos");
+    print("drag pos 638");
     print(_dragPosition);
     RenderEditableBox paragraph =
         _scope.renderContext.boxForGlobalPoint(_dragPosition);
     // When dragging outside a paragraph, user expects dragging to
     // capture horizontal component of movement
     if (paragraph == null) {
-      print("1null paragraph");
+      print("null paragraph 645");
       paragraph = _dragCurrentParagraph;
       var effectiveGlobalPoint = paragraph.localToGlobal(Offset.zero);
       if (_dragPosition.dy > paragraph.localToGlobal(Offset.zero).dy) {
@@ -643,11 +653,11 @@ class _SelectionHandleDriverState extends State<SelectionHandleDriver>
         effectiveGlobalPoint =
             Offset(_dragPosition.dx, effectiveGlobalPoint.dy);
       }
-      print("1returning");
+      print("returning 656");
       print(paragraph.globalToLocal(effectiveGlobalPoint));
       return paragraph.globalToLocal(effectiveGlobalPoint);
     }
-    print("1returning");
+    print("returning 660");
     print(paragraph.globalToLocal(_dragPosition));
     _dragCurrentParagraph = paragraph;
     return paragraph.globalToLocal(_dragPosition);
@@ -694,6 +704,7 @@ class _SelectionHandleDriver2State extends State<SelectionHandleDriver2>
     if (block == null) return null;
 
     final paintOffset = Offset.zero;
+    print("check 707");
     print(selection);
     final boxes = block.getEndpointsForSelection(selection);
     print(boxes);
@@ -997,7 +1008,9 @@ class _SelectionToolbarState extends State<_SelectionToolbar> {
     if (boxes.isEmpty) {
       return Container();
     }
-
+    print(" ");
+    print(" ");
+    print("BUILDING TOOLBAR");
     // Find the horizontal midpoint, just above the selected text.
     var midpoint = Offset(
       (boxes.length == 1)
@@ -1005,12 +1018,23 @@ class _SelectionToolbarState extends State<_SelectionToolbar> {
           : (boxes[0].start + boxes[1].start) / 2.0,
       boxes[0].bottom - block.preferredLineHeight,
     );
+    print("boxes 1019");
+    print(boxes);
+    print("first midpoint 1019");
+    print(midpoint);
     List<TextSelectionPoint> endpoints;
+    //first one, one line, second multi line
     if (boxes.length == 1) {
       midpoint = Offset((boxes[0].start + boxes[0].end) / 2.0,
           boxes[0].bottom - block.preferredLineHeight);
-      final start = Offset(boxes[0].start, block.preferredLineHeight);
-      endpoints = <TextSelectionPoint>[TextSelectionPoint(start, null)];
+      final start = Offset(boxes.first.start, boxes.first.bottom);
+      final end = Offset(boxes.last.end, boxes.last.bottom);
+      endpoints = <TextSelectionPoint>[
+        TextSelectionPoint(start, boxes.first.direction),
+        TextSelectionPoint(end, boxes.last.direction),
+      ];
+      print("second midpoint 1027");
+      print(midpoint);
     } else {
       midpoint = Offset((boxes[0].start + boxes[1].start) / 2.0,
           boxes[0].bottom - block.preferredLineHeight);
@@ -1020,6 +1044,8 @@ class _SelectionToolbarState extends State<_SelectionToolbar> {
         TextSelectionPoint(start, boxes.first.direction),
         TextSelectionPoint(end, boxes.last.direction),
       ];
+      print("third midpoint 1038");
+      print(midpoint);
     }
 
     final editingRegion = Rect.fromPoints(
