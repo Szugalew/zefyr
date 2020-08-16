@@ -115,15 +115,15 @@ print("Position");
     final offset = scrollable.position.pixels;
     var target = viewport.getOffsetToReveal(object, 0.0).offset;
     if (target + pose.dy - offset - 0 < 0.0) {
-      print("target");
-      print(target);
+    //print("target");
+    //print(target);
       scrollable.position.animateTo((target + pose.dy - 20), duration: new Duration(milliseconds: 100), curve: Curves.ease);
       return;
     }
     target = viewport.getOffsetToReveal(object, 1.0).offset;
     if (target - object.paintBounds.height + pose.dy + 40 - offset > 0.0) {
-       print("target down");
-      print(target);
+     //print("target down");
+    //print(target);
       scrollable.position.animateTo((target - object.paintBounds.height + pose.dy + 80), duration: new Duration(milliseconds: 100), curve: Curves.ease);
     }
   }
