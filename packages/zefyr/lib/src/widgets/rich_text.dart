@@ -183,13 +183,6 @@ class RenderZefyrParagraph extends RenderParagraph
       final caret = CursorPainter.buildPrototype(preferredLineHeight);
       final offset = getOffsetForCaret(local.extent, caret);
     //print("THIS HSFNXFN");
-    //print(ui.TextBox.fromLTRBD(
-          offset.dx,
-          offset.dy,
-          offset.dx,
-          offset.dy + caret.height,
-          TextDirection.ltr,
-        ));
       return [
         ui.TextBox.fromLTRBD(
           offset.dx,
