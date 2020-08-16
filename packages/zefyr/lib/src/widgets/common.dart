@@ -95,12 +95,17 @@ class _ZefyrLineState extends State<ZefyrLine> {
     if (scope.selection.isCollapsed &&
         widget.node.containsOffset(scope.selection.extentOffset)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        bringIntoView(context);
+        bringIntoView(context,scope);
       });
     }
   }
 
-  void bringIntoView(BuildContext context) {
+  void bringIntoView(BuildContext context,ZefyrScope scope) {
+print("Position");
+    var caret = Rect.fromLTWH(0.0, 0.0, 1, 1);
+    var box = scope.renderContext.boxForTextOffset(scope.selection.baseOffset);
+    var pose = box.getOffsetForCaret(TextPosition(offset: scope.selection.baseOffset),caret);
+
     final scrollable = Scrollable.of(context);
     final object = context.findRenderObject();
     assert(object.attached);
@@ -109,13 +114,17 @@ class _ZefyrLineState extends State<ZefyrLine> {
 
     final offset = scrollable.position.pixels;
     var target = viewport.getOffsetToReveal(object, 0.0).offset;
-    if (target - offset < 0.0) {
-      scrollable.position.jumpTo(target);
+    if (target + pose.dy - offset - 0 < 0.0) {
+      print("target");
+      print(target);
+      scrollable.position.animateTo((target + pose.dy - 20), duration: new Duration(milliseconds: 100), curve: Curves.ease);
       return;
     }
     target = viewport.getOffsetToReveal(object, 1.0).offset;
-    if (target - offset > 0.0) {
-      scrollable.position.jumpTo(target);
+    if (target - object.paintBounds.height + pose.dy + 40 - offset > 0.0) {
+       print("target down");
+      print(target);
+      scrollable.position.animateTo((target - object.paintBounds.height + pose.dy + 80), duration: new Duration(milliseconds: 100), curve: Curves.ease);
     }
   }
 
