@@ -125,14 +125,14 @@ class RenderZefyrParagraph extends RenderParagraph
   // the trailing \n is not handled by the span, drop it from the sel.
   // otherwise getBoxesForSelection fails on the web. (out of range)
   TextSelection _trimSelection(TextSelection selection) {
-    print("TRIM SELECTION");
-    print(node);
-    print(node.length);
-    print("old selection");
-    print(selection);
+  //print("TRIM SELECTION");
+  //print(node);
+  //print(node.length);
+  //print("old selection");
+  //print(selection);
     //android allow selection of empty rows, dont do the following
-    print("PLATFORM");
-    print(Platform.isAndroid);
+  //print("PLATFORM");
+  //print(Platform.isAndroid);
     if (Platform.isAndroid == false) {
       //not android
       if (selection.baseOffset > node.length - 1) {
@@ -163,11 +163,11 @@ class RenderZefyrParagraph extends RenderParagraph
         }
       }
     }
-    print("new selection");
-    print(selection);
+  //print("new selection");
+  //print(selection);
     
     
-    print("TRIM SELECTION RETURNED");
+  //print("TRIM SELECTION RETURNED");
     return selection;
   }
 
@@ -176,14 +176,14 @@ class RenderZefyrParagraph extends RenderParagraph
   @override
   List<ui.TextBox> getEndpointsForSelection(TextSelection selection) {
     var local = selection;
-    print("local = selection 137");
-    print(local);
+  //print("local = selection 137");
+  //print(local);
     if (local.isCollapsed) {
       _prototypePainter.layout(minWidth: constraints.minWidth, maxWidth: constraints.maxWidth);
       final caret = CursorPainter.buildPrototype(preferredLineHeight);
       final offset = getOffsetForCaret(local.extent, caret);
-      print("THIS HSFNXFN");
-      print(ui.TextBox.fromLTRBD(
+    //print("THIS HSFNXFN");
+    //print(ui.TextBox.fromLTRBD(
           offset.dx,
           offset.dy,
           offset.dx,
@@ -201,19 +201,19 @@ class RenderZefyrParagraph extends RenderParagraph
       ];
     }
 
-    print("local = get local selection 161");
+  //print("local = get local selection 161");
     local = getLocalSelection(selection);
-    print(local);
+  //print(local);
 
-    print("local trimed 165");
-    print(_trimSelection(local));
+  //print("local trimed 165");
+  //print(_trimSelection(local));
 
-    print("result = getBoxesForSelection 167");
+  //print("result = getBoxesForSelection 167");
     final result = getBoxesForSelection(_trimSelection(local)).toList();
-    print(result);
+  //print(result);
 
-    print("returning result of get endpoints for selection 169");
-    print("");
+  //print("returning result of get endpoints for selection 169");
+  //print("");
     return result;
   }
 
