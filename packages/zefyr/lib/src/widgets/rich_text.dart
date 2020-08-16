@@ -134,6 +134,7 @@ class RenderZefyrParagraph extends RenderParagraph
     print("PLATFORM");
     print(Platform.isAndroid);
     if (Platform.isAndroid == false) {
+      //not android
       if (selection.baseOffset > node.length - 1) {
         selection = selection.copyWith(baseOffset: node.length - 1);
       }
@@ -141,11 +142,25 @@ class RenderZefyrParagraph extends RenderParagraph
         selection = selection.copyWith(extentOffset: node.length - 1);
       }
     }else{
-      if(selection.extentOffset == 0){
-        selection = selection.copyWith(extentOffset: 1);
+      //android
+      bool inverted = false;
+      if (selection.baseOffset > selection.extentOffset) {
+        inverted = true;
       }
-      if(selection.baseOffset == node.length - 1 && selection.baseOffset != 0){
-        selection = selection.copyWith(baseOffset: node.length - 2);
+      if (inverted == false){
+        if(selection.extentOffset == 0){
+          selection = selection.copyWith(extentOffset: 1);
+        }
+        if(selection.baseOffset == node.length - 1 && selection.baseOffset != 0){
+          selection = selection.copyWith(baseOffset: node.length - 2);
+        }
+      } else {
+        if(selection.baseOffset == 0){
+          selection = selection.copyWith(baseOffset: 1);
+        }
+        if(selection.extentOffset == node.length - 1 && selection.extentOffset != 0){
+          selection = selection.copyWith(extentOffset: node.length - 2);
+        }
       }
     }
     print("new selection");
