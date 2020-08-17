@@ -1,6 +1,6 @@
 # My Fork
 
-Scrolling no longer breaks when paragraph is bigger than the screen.
+Scrolling no longer breaks when the paragraph is bigger than the screen.
 Significantly improved android selection handle user experience.
 
 # About Zefyr
